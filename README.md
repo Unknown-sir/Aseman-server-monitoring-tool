@@ -12,6 +12,6 @@ A simple yet powerful server monitoring tool built with Flask and psutil.
 1. Clone the repository:
    ```bash
    git clone https://github.com/Unknown-sir/server-monitoring-tool.git
-   pip install -r requirements.txt
    cd server-monitoring-tool
-   python server_monitor.py
+   pip install -r requirements.txt
+   python3 server_monitor.py
