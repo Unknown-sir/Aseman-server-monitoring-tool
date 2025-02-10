@@ -1,22 +1,11 @@
-from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template_string, request, jsonify, session
 import psutil
 import time
 import os
 import logging
-from flask_babel import Babel, gettext as _
 
-# تنظیمات اولیه
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
-app.config['BABEL_DEFAULT_LOCALE'] = 'en'
-app.config['LANGUAGES'] = {'en': 'English', 'fa': 'Persian'}
-
-# مقداردهی Babel
-babel = Babel(app)
-
-@babel.localeselector
-def get_locale():
-    return session.get('lang', app.config['BABEL_DEFAULT_LOCALE'])
 
 # متغیرهای مانیتورینگ
 network_offset_sent = 0
@@ -30,6 +19,7 @@ def get_system_info():
     memory = psutil.virtual_memory()
     net_io = psutil.net_io_counters()
     disk = psutil.disk_usage('/')
+    uptime = time.time() - psutil.boot_time()
 
     return {
         'cpu_usage': cpu_usage,
@@ -37,7 +27,7 @@ def get_system_info():
         'bytes_sent': net_io.bytes_sent - network_offset_sent,
         'bytes_recv': net_io.bytes_recv - network_offset_recv,
         'disk_usage': disk.percent,
-        'uptime': time.time() - psutil.boot_time()
+        'uptime': uptime
     }
 
 @app.route('/')
@@ -91,19 +81,19 @@ def index():
         </head>
         <body>
             <div class="container">
-                <h1>{{ _('Server Monitoring') }}</h1>
+                <h1>Server Monitoring</h1>
                 
                 <div class="stats">
                     <div class="stat-box">
-                        <h3>{{ _('CPU Usage') }}</h3>
+                        <h3>CPU Usage</h3>
                         <span id="cpu-usage">0%</span>
                     </div>
                     <div class="stat-box">
-                        <h3>{{ _('Memory Usage') }}</h3>
+                        <h3>Memory Usage</h3>
                         <span id="memory-usage">0%</span>
                     </div>
                     <div class="stat-box">
-                        <h3>{{ _('Network Usage') }}</h3>
+                        <h3>Network Usage</h3>
                         <span id="network-usage">0 MB</span>
                     </div>
                 </div>
@@ -112,7 +102,7 @@ def index():
                     <canvas id="cpuChart"></canvas>
                 </div>
                 
-                <button onclick="showAdminPanel()">{{ _('Admin Panel') }}</button>
+                <button onclick="showAdminPanel()">Admin Panel</button>
             </div>
 
             <script>
@@ -152,7 +142,6 @@ def index():
                     const data = await fetchData();
                     updateUI(data);
                     
-                    // Update chart
                     const labels = cpuChart.data.labels;
                     const newLabel = new Date().toLocaleTimeString();
                     
