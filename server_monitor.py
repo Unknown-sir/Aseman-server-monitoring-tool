@@ -5,22 +5,20 @@ import os
 import logging
 from flask_babel import Babel, gettext as _
 
+# تنظیمات اولیه
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
-
-# تنظیمات بین‌المللی‌سازی
 app.config['BABEL_DEFAULT_LOCALE'] = 'en'
-app.config['LANGUAGES'] = ['en', 'fa']
+app.config['LANGUAGES'] = {'en': 'English', 'fa': 'Persian'}
 
-# مقداردهی اولیه Babel
+# مقداردهی Babel
 babel = Babel(app)
 
 @babel.localeselector
 def get_locale():
-    return session.get('lang', 'en')
+    return session.get('lang', app.config['BABEL_DEFAULT_LOCALE'])
 
-# بقیه کدها بدون تغییر
-# متغیرهای سیستمی
+# متغیرهای مانیتورینگ
 network_offset_sent = 0
 network_offset_recv = 0
 network_limit = None
@@ -28,122 +26,165 @@ network_limit = None
 def get_system_info():
     global network_offset_sent, network_offset_recv
 
-    # اطلاعات CPU
-    cpu_usage = psutil.cpu_percent(interval=0.5)
-    
-    # اطلاعات RAM
-    memory_info = psutil.virtual_memory()
-    memory_usage = memory_info.percent
-    
-    # اطلاعات شبکه
+    cpu_usage = psutil.cpu_percent(interval=1)
+    memory = psutil.virtual_memory()
     net_io = psutil.net_io_counters()
-    bytes_sent = net_io.bytes_sent - network_offset_sent
-    bytes_recv = net_io.bytes_recv - network_offset_recv
-    total_network_usage = bytes_sent + bytes_recv
-    
-    # اطلاعات دیسک
-    disk_usage = psutil.disk_usage('/')
-    
-    # پردازش‌ها
-    processes = [proc.info for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent'])]
-    
-    # Uptime
-    uptime = time.time() - psutil.boot_time()
-    
+    disk = psutil.disk_usage('/')
+
     return {
         'cpu_usage': cpu_usage,
-        'memory_usage': memory_usage,
-        'bytes_sent': bytes_sent,
-        'bytes_recv': bytes_recv,
-        'total_network_usage': total_network_usage,
-        'disk_usage': disk_usage,
-        'processes': processes,
-        'uptime': uptime
+        'memory_usage': memory.percent,
+        'bytes_sent': net_io.bytes_sent - network_offset_sent,
+        'bytes_recv': net_io.bytes_recv - network_offset_recv,
+        'disk_usage': disk.percent,
+        'uptime': time.time() - psutil.boot_time()
     }
 
 @app.route('/')
 def index():
     return render_template_string('''
         <!DOCTYPE html>
-        <html lang="en">
+        <html>
         <head>
             <meta charset="UTF-8">
             <title>Server Monitor</title>
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <style>
-                body { background: #121212; color: white; }
-                .stat { background: #1e1e1e; }
-                .chart-container { background: #1e1e1e; }
+                body { 
+                    background: #1a1a1a; 
+                    color: #fff;
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                }
+                .container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                }
+                .stats {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 30px;
+                }
+                .stat-box {
+                    background: #2d2d2d;
+                    padding: 20px;
+                    border-radius: 8px;
+                    text-align: center;
+                }
+                .chart-container {
+                    background: #2d2d2d;
+                    padding: 20px;
+                    border-radius: 8px;
+                    margin-bottom: 30px;
+                }
+                button {
+                    background: #00cc88;
+                    color: #fff;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                }
             </style>
         </head>
         <body>
-            <h1>{{ _('Server Monitoring') }}</h1>
-            <div class="stats">
-                <!-- آمار CPU، RAM، شبکه و ... -->
+            <div class="container">
+                <h1>{{ _('Server Monitoring') }}</h1>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <h3>{{ _('CPU Usage') }}</h3>
+                        <span id="cpu-usage">0%</span>
+                    </div>
+                    <div class="stat-box">
+                        <h3>{{ _('Memory Usage') }}</h3>
+                        <span id="memory-usage">0%</span>
+                    </div>
+                    <div class="stat-box">
+                        <h3>{{ _('Network Usage') }}</h3>
+                        <span id="network-usage">0 MB</span>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="cpuChart"></canvas>
+                </div>
+                
+                <button onclick="showAdminPanel()">{{ _('Admin Panel') }}</button>
             </div>
-            <div class="charts">
-                <canvas id="cpuChart"></canvas>
-                <canvas id="memoryChart"></canvas>
-            </div>
-            <button onclick="showAdminPanel()">{{ _('Admin Panel') }}</button>
-            <!-- مودال‌های مدیریتی -->
+
+            <script>
+                let cpuChart;
+                
+                async function fetchData() {
+                    const response = await fetch('/data');
+                    return await response.json();
+                }
+
+                function updateUI(data) {
+                    document.getElementById('cpu-usage').textContent = `${data.cpu_usage.toFixed(1)}%`;
+                    document.getElementById('memory-usage').textContent = `${data.memory_usage.toFixed(1)}%`;
+                    
+                    const networkUsage = 
+                        ((data.bytes_sent + data.bytes_recv) / 1024 / 1024).toFixed(2);
+                    document.getElementById('network-usage').textContent = `${networkUsage} MB`;
+                }
+
+                function initCharts() {
+                    const ctx = document.getElementById('cpuChart').getContext('2d');
+                    cpuChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: [],
+                            datasets: [{
+                                label: 'CPU Usage (%)',
+                                data: [],
+                                borderColor: '#00cc88',
+                                tension: 0.1
+                            }]
+                        }
+                    });
+                }
+
+                setInterval(async () => {
+                    const data = await fetchData();
+                    updateUI(data);
+                    
+                    // Update chart
+                    const labels = cpuChart.data.labels;
+                    const newLabel = new Date().toLocaleTimeString();
+                    
+                    if (labels.length > 15) labels.shift();
+                    labels.push(newLabel);
+                    
+                    cpuChart.data.datasets[0].data.push(data.cpu_usage);
+                    if (cpuChart.data.datasets[0].data.length > 15) {
+                        cpuChart.data.datasets[0].data.shift();
+                    }
+                    
+                    cpuChart.update();
+                }, 1000);
+
+                window.onload = initCharts;
+            </script>
         </body>
         </html>
     ''')
 
 @app.route('/data')
 def data():
-    system_info = get_system_info()
-    # بررسی لیمیت شبکه
-    global network_limit
-    if network_limit and network_limit > 0:
-        total_usage_tb = system_info['total_network_usage'] / (1024 ** 4)
-        if total_usage_tb >= network_limit:
-            os.system('shutdown now')
-    return jsonify(system_info)
+    return jsonify(get_system_info())
 
 @app.route('/reset', methods=['POST'])
-def reset():
+def reset_network():
     global network_offset_sent, network_offset_recv
-    data = request.json
-    if data.get('password') == 'M2903293538m#':
-        net_io = psutil.net_io_counters()
-        network_offset_sent = net_io.bytes_sent
-        network_offset_recv = net_io.bytes_recv
-        logging.info('Network usage reset by admin')
-        return jsonify({'success': True})
-    else:
-        return jsonify({'success': False})
-
-@app.route('/set_limit', methods=['POST'])
-def set_limit():
-    global network_limit
-    data = request.json
-    limit = data.get('limit')
-    if limit is not None and limit >= 0:
-        network_limit = limit
-        return jsonify({'success': True})
-    else:
-        return jsonify({'success': False})
-
-@app.route('/set_language/<lang>')
-def set_language(lang):
-    session['lang'] = lang
-    return redirect(url_for('index'))
-
-@app.route('/manage_service', methods=['POST'])
-def manage_service():
-    service_name = request.json.get('service')
-    action = request.json.get('action')
-    os.system(f'systemctl {action} {service_name}')
-    return jsonify({'success': True})
-
-@app.route('/list_files', methods=['POST'])
-def list_files():
-    path = request.json.get('path', '/')
-    files = os.listdir(path)
-    return jsonify({'files': files})
+    net_io = psutil.net_io_counters()
+    network_offset_sent = net_io.bytes_sent
+    network_offset_recv = net_io.bytes_recv
+    return jsonify({'status': 'success'})
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='server_monitor.log', level=logging.INFO)
+    logging.basicConfig(level=logging.INFO)
     app.run(host='0.0.0.0', port=5000, debug=True)
