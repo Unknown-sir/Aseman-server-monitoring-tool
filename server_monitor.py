@@ -11,6 +11,8 @@ app.secret_key = 'supersecretkey'
 # تنظیمات بین‌المللی‌سازی
 app.config['BABEL_DEFAULT_LOCALE'] = 'en'
 app.config['LANGUAGES'] = ['en', 'fa']
+
+# مقداردهی اولیه Babel
 babel = Babel(app)
 
 @babel.localeselector
