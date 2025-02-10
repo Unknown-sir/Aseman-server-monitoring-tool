@@ -8,26 +8,24 @@ import json
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 
-# ذخیره لیمیت در فایل
+# تنظیمات فایل ذخیره لیمیت
 LIMIT_FILE = 'network_limit.json'
 
-# بارگذاری لیمیت از فایل
 def load_limit():
     try:
         with open(LIMIT_FILE, 'r') as f:
             return json.load(f).get('limit')
-    except:
+    except (FileNotFoundError, json.JSONDecodeError):
         return None
 
-# ذخیره لیمیت در فایل
 def save_limit(limit):
     with open(LIMIT_FILE, 'w') as f:
         json.dump({'limit': limit}, f)
 
-# متغیرهای مانیتورینگ
+# مقداردهی اولیه
 network_offset_sent = 0
 network_offset_recv = 0
-network_limit = load_limit()
+network_limit = load_limit() or None
 
 def get_system_info():
     global network_offset_sent, network_offset_recv
@@ -128,7 +126,7 @@ def index():
                     </div>
                     <div class="stat-box">
                         <h3>Network Usage</h3>
-                        <span id="network-usage">0 MB</span>
+                        <span id="network-usage">0 TB</span>
                         <div id="network-limit-display"></div>
                     </div>
                 </div>
@@ -208,7 +206,7 @@ def index():
 
                 // Update UI
                 function updateLimitDisplay() {
-                    const limitDisplay = currentLimit ? 
+                    const limitDisplay = currentLimit !== null ? 
                         `${currentLimit} TB (${((currentNetworkUsage / currentLimit) * 100).toFixed(1)}%)` : 
                         '∞';
                     document.getElementById('network-limit-display').textContent = `Limit: ${limitDisplay}`;
@@ -221,26 +219,33 @@ def index():
                     
                     cpuChart = new Chart(cpuCtx, {
                         type: 'line',
-                        data: { labels: [], datasets: [{
-                            label: 'CPU Usage (%)',
-                            data: [],
-                            borderColor: '#00cc88',
-                            tension: 0.1
-                        }]}
+                        data: { 
+                            labels: [], 
+                            datasets: [{
+                                label: 'CPU Usage (%)',
+                                data: [],
+                                borderColor: '#00cc88',
+                                tension: 0.1
+                            }]
+                        }
                     });
 
                     memoryChart = new Chart(memoryCtx, {
                         type: 'line',
-                        data: { labels: [], datasets: [{
-                            label: 'Memory Usage (%)',
-                            data: [],
-                            borderColor: '#ff6b6b',
-                            tension: 0.1
-                        }]}
+                        data: { 
+                            labels: [], 
+                            datasets: [{
+                                label: 'Memory Usage (%)',
+                                data: [],
+                                borderColor: '#ff6b6b',
+                                tension: 0.1
+                            }]
+                        }
                     });
                 }
 
                 // Main update loop
+                let currentNetworkUsage = 0;
                 setInterval(async () => {
                     const data = await fetch('/data').then(res => res.json());
                     
@@ -248,9 +253,9 @@ def index():
                     document.getElementById('cpu-usage').textContent = `${data.cpu_usage.toFixed(1)}%`;
                     document.getElementById('memory-usage').textContent = `${data.memory_usage.toFixed(1)}%`;
                     
-                    const networkMB = (data.bytes_sent + data.bytes_recv) / 1024 / 1024 / 1024 / 1024;
-                    document.getElementById('network-usage').textContent = `${networkMB.toFixed(4)} TB`;
-                    document.getElementById('adminNetworkUsage').textContent = `${networkMB.toFixed(4)} TB`;
+                    currentNetworkUsage = (data.bytes_sent + data.bytes_recv) / 1024 ** 4;
+                    document.getElementById('network-usage').textContent = `${currentNetworkUsage.toFixed(4)} TB`;
+                    document.getElementById('adminNetworkUsage').textContent = `${currentNetworkUsage.toFixed(4)} TB`;
 
                     // Update charts
                     const timeLabel = new Date().toLocaleTimeString();
@@ -259,7 +264,7 @@ def index():
                     updateChart(memoryChart, data.memory_usage, timeLabel);
                     
                     // Check limit
-                    if(currentLimit && networkMB >= currentLimit) {
+                    if(currentLimit && currentNetworkUsage >= currentLimit) {
                         fetch('/shutdown', {method: 'POST'});
                     }
                     
@@ -280,7 +285,7 @@ def index():
             </script>
         </body>
         </html>
-    ''')
+    ''', network_limit=network_limit)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -311,4 +316,9 @@ def data():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    
+    # ایجاد فایل لیمیت در صورت عدم وجود
+    if not os.path.exists(LIMIT_FILE):
+        save_limit(None)
+    
+    app.run(host='0.0.0.0', port=5000, debug=False)  # غیرفعال کردن حالت دیباگ
