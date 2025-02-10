@@ -7,14 +7,17 @@ from flask_babel import Babel, gettext as _
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
-babel = Babel(app)
 
 # تنظیمات بین‌المللی‌سازی
-LANGUAGES = ['en', 'fa']
+app.config['BABEL_DEFAULT_LOCALE'] = 'en'
+app.config['LANGUAGES'] = ['en', 'fa']
+babel = Babel(app)
+
 @babel.localeselector
 def get_locale():
     return session.get('lang', 'en')
 
+# بقیه کدها بدون تغییر
 # متغیرهای سیستمی
 network_offset_sent = 0
 network_offset_recv = 0
