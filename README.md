@@ -1,7 +1,7 @@
 # Server Monitoring Tool
 <div align="center"><br>
 
-برای توضیحات <a href="https://github.com/Unknown-sir/README-fa.md"> فارسی اینجا بزنید </a>
+برای توضیحات <a href="https://github.com/Unknown-sir/server-monitoring-tool/blob/main/README-fa.md"> فارسی اینجا بزنید </a>
 </div>
 <br><br>
 A simple yet powerful server monitoring tool built with Flask and psutil.
