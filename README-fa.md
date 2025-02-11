@@ -6,6 +6,7 @@
 - پشتیبانی از چند زبان (انگلیسی، فارسی).
 # اسکریپت نصب
 برای نصب کافیست دستورات زیر را روی سرور خود اجرا کنید
+
 ```
 git clone https://github.com/Unknown-sir/server-monitoring-tool.git
 ```
@@ -17,6 +18,9 @@ sudo apt install python3-pip
 ```
 ```
 pip install -r requirements.txt
+```
+```
+pip install flask psutil
 ```
 ```
 apt install npm
