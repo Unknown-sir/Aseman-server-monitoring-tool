@@ -15,9 +15,7 @@ A simple yet powerful server monitoring tool built with Flask and psutil.
 
 # Installation script
 To install, simply run the following commands on your server
-```
-pip install flask psutil
-```
+
 ```
 git clone https://github.com/Unknown-sir/server-monitoring-tool.git
 ```
@@ -29,6 +27,9 @@ sudo apt install python3-pip
 ```
 ```
 pip install -r requirements.txt
+```
+```
+pip install flask psutil
 ```
 ```
 apt install npm
