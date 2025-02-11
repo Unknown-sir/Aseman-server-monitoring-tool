@@ -13,6 +13,9 @@ git clone https://github.com/Unknown-sir/server-monitoring-tool.git
 cd server-monitoring-tool
 ```
 ```
+sudo apt install python3-pip
+```
+```
 pip install -r requirements.txt
 ```
 ```
