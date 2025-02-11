@@ -1,5 +1,9 @@
 # Server Monitoring Tool
+<div align="center"><br>
 
+برای توضیحات <a href="https://github.com/MrAminiDev/Unknown-sir/blob/main/README-fa.md"> فارسی اینجا بزنید </a>
+</div>
+<br><br>
 A simple yet powerful server monitoring tool built with Flask and psutil.
 
 ## Features
@@ -8,11 +12,20 @@ A simple yet powerful server monitoring tool built with Flask and psutil.
 - Historical data storage and visualization.
 - Multi-language support (English, Persian).
 
-## Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Unknown-sir/server-monitoring-tool.git
-   cd server-monitoring-tool
-   pip install -r requirements.txt
-   apt install npm
-   pm2 start server_monitor.py  -i max
+# Installation Script
+To install, simply run the following command on your server
+```
+git clone https://github.com/Unknown-sir/server-monitoring-tool.git
+```
+```
+cd server-monitoring-tool
+```
+```
+pip install -r requirements.txt
+```
+```
+apt install npm
+```
+```
+pm2 start server_monitor.py  -i max
+```
