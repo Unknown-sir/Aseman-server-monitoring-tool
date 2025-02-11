@@ -1,4 +1,6 @@
 # Server Monitoring Tool
+<div align="center"><img src="https://uploadkon.ir/uploads/c83d11_25Screenshot-7.jpg" width="500"></div>
+<div align="center"><br>
 <div align="center"><br>
 
 برای توضیحات <a href="https://github.com/Unknown-sir/server-monitoring-tool/blob/main/README-fa.md"> فارسی اینجا بزنید </a>
