@@ -31,5 +31,8 @@ pip install -r requirements.txt
 apt install npm
 ```
 ```
+npm install pm2 -g
+```
+```
 pm2 start server_monitor.py  -i max
 ```
