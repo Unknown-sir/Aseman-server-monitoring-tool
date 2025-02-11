@@ -109,6 +109,56 @@ def index():
                     padding: 8px;
                     width: 200px;
                 }
+body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            transition: background 0.3s, color 0.3s;
+        }
+        .dark-theme {
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .light-theme {
+            background: #fff;
+            color: #000;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-box {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .chart-container {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #00cc88;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
             </style>
         </head>
         <body>
@@ -283,6 +333,7 @@ def index():
 
                 window.onload = initCharts;
             </script>
+<div class="footer">Powered by <a href="https://t.me/sirrskhi">Rskhi-TeaM</a></div>
         </body>
         </html>
     ''', network_limit=network_limit)
