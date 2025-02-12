@@ -1,4 +1,7 @@
-from flask import Flask, render_template_string, request, jsonify, session
+from flask import Flask, render_template_string, request, jsonify
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import psutil
 import time
 import os
@@ -6,10 +9,27 @@ import logging
 import json
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
+app.secret_key = os.environ.get('SECRET_KEY', 'supersecretkey')
 
-# تنظیمات فایل ذخیره لیمیت
+# تنظیمات فایل‌های ذخیره‌سازی
 LIMIT_FILE = 'network_limit.json'
+SECURITY_FILE = 'sec.json'
+
+def load_security_config():
+    try:
+        with open(SECURITY_FILE, 'r') as f:
+            config = json.load(f)
+            if not all(key in config for key in ['username', 'password']):
+                raise ValueError("Invalid security config file")
+            
+            # هش کردن رمز عبور و حذف نسخه متنی
+            config['password_hash'] = generate_password_hash(config['password'])
+            del config['password']
+            return config
+            
+    except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
+        logging.error(f"خطای پیکربندی امنیتی: {str(e)}")
+        exit(1)
 
 def load_limit():
     try:
@@ -22,10 +42,18 @@ def save_limit(limit):
     with open(LIMIT_FILE, 'w') as f:
         json.dump({'limit': limit}, f)
 
+# بارگذاری تنظیمات امنیتی
+security_config = load_security_config()
+ADMIN_USERNAME = security_config['username']
+ADMIN_PASSWORD_HASH = security_config['password_hash']
+
 # مقداردهی اولیه
 network_offset_sent = 0
 network_offset_recv = 0
 network_limit = load_limit() or None
+
+# Rate Limiting
+limiter = Limiter(app=app, key_func=get_remote_address)
 
 def get_system_info():
     global network_offset_sent, network_offset_recv
@@ -109,56 +137,11 @@ def index():
                     padding: 8px;
                     width: 200px;
                 }
-body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            transition: background 0.3s, color 0.3s;
-        }
-        .dark-theme {
-            background: #1a1a1a;
-            color: #fff;
-        }
-        .light-theme {
-            background: #fff;
-            color: #000;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .stat-box {
-            background: #2d2d2d;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .chart-container {
-            background: #2d2d2d;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-        }
-        button {
-            background: #00cc88;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            font-weight: bold;
-        }
+                .footer {
+                    text-align: center;
+                    margin-top: 20px;
+                    font-weight: bold;
+                }
             </style>
         </head>
         <body>
@@ -333,16 +316,18 @@ body {
 
                 window.onload = initCharts;
             </script>
-<div class="footer">Powered by <a href="https://t.me/sirrskhi">Rskhi-TeaM</a></div>
+            <div class="footer">Powered by <a href="https://t.me/sirrskhi">Rskhi-TeaM</a></div>
         </body>
         </html>
     ''', network_limit=network_limit)
 
 @app.route('/login', methods=['POST'])
+@limiter.limit("5 per minute")
 def login():
     data = request.json
-    if data.get('username') == 'sirrskhi' and data.get('password') == 'M2903293538m#':
+    if data.get('username') == ADMIN_USERNAME and check_password_hash(ADMIN_PASSWORD_HASH, data.get('password')):
         return jsonify({'success': True})
+    logging.warning(f"Failed login attempt from IP: {request.remote_addr}")
     return jsonify({'success': False})
 
 @app.route('/set_limit', methods=['POST'])
@@ -368,8 +353,13 @@ def data():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     
+    # بررسی وجود فایل امنیتی
+    if not os.path.exists(SECURITY_FILE):
+        logging.error(f"فایل امنیتی '{SECURITY_FILE}' یافت نشد!")
+        exit(1)
+    
     # ایجاد فایل لیمیت در صورت عدم وجود
     if not os.path.exists(LIMIT_FILE):
         save_limit(None)
     
-    app.run(host='0.0.0.0', port=5000, debug=False)  # غیرفعال کردن حالت دیباگ
+    app.run(host='0.0.0.0', port=5000, debug=False)
