@@ -40,6 +40,12 @@ apt install npm
 ```
 npm install pm2 -g
 ```
+Modify the sec.json file with your desired username and password
+Replace your username for "yourusername"
+And replace your password for "yourpassword"
+```
+sudo nano sec.json
+```
 ```
 pm2 start server_monitor.py  -i max
 ```
