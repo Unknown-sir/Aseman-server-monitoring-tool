@@ -32,6 +32,9 @@ pip install -r requirements.txt
 pip install flask psutil
 ```
 ```
+pip install flask psutil flask-limiter werkzeug
+```
+```
 apt install npm
 ```
 ```
