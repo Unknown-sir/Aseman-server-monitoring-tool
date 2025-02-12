@@ -23,6 +23,9 @@ pip install -r requirements.txt
 pip install flask psutil
 ```
 ```
+pip install flask psutil flask-limiter werkzeug
+```
+```
 apt install npm
 ```
 ```
@@ -37,5 +40,7 @@ sudo nano sec.json
 ```
 pm2 start server_monitor.py  -i max
 ```
-
+```
+chmod 600 sec.json
+```
 
