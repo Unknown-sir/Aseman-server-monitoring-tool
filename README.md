@@ -49,3 +49,6 @@ sudo nano sec.json
 ```
 pm2 start server_monitor.py  -i max
 ```
+```
+chmod 600 sec.json
+```
