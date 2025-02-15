@@ -23,6 +23,9 @@ pip install -r requirements.txt
 pip install flask psutil
 ```
 ```
+pip install apscheduler
+```
+```
 pip install flask psutil flask-limiter werkzeug
 ```
 ```
