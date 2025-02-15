@@ -52,3 +52,5 @@ pm2 start server_monitor.py  -i max
 ```
 chmod 600 sec.json
 ```
+## Stargazers over time
+[![Stargazers over time](https://starchart.cc/Unknown-sir/server-monitoring-tool.svg?variant=adaptive)](https://starchart.cc/Unknown-sir/server-monitoring-tool)
